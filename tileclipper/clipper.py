@@ -6,9 +6,20 @@ import pyproj
 import gc
 import logging
 from tqdm import tqdm
+import boto3
 
 class TileClipper:
-    def __init__(self, base_url, bbox, output_folder, max_workers=10, aws_access_key=None, aws_secret_key=None, s3_bucket=None,use_s3=False):
+    def __init__(self, 
+                 base_url, 
+                 bbox, 
+                 output_folder, 
+                 max_workers=10, 
+                 use_s3=False,
+                 aws_access_key=None, 
+                 aws_secret_key=None, 
+                 s3_bucket=None,
+                 tile_layer_name=None
+                 ):
         self.base_url = base_url
         self.bbox = bbox
         self.output_folder = output_folder
@@ -16,6 +27,8 @@ class TileClipper:
         self.aws_access_key = aws_access_key
         self.aws_secret_key = aws_secret_key
         self.s3_bucket = s3_bucket
+        self.use_s3 = use_s3
+        self.tile_layer_name = tile_layer_name
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
@@ -70,13 +83,13 @@ class TileClipper:
             total_tiles = len(x_tiles) * len(y_tiles)
             with tqdm(total=total_tiles, desc=f"Downloading Zoom Level {zoom_level}", unit="tiles") as pbar:
                 with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-                    futures = [executor.submit(self.download_tile_with_progress, x, y, zoom_level, pbar) for x in x_tiles for y in y_tiles]
+                    futures = [executor.submit(self.download_tile_with_progress_s3 if self.use_s3 else self.download_tile_with_progress_local, x, y, zoom_level, pbar) for x in x_tiles for y in y_tiles]
                     for future in futures:
                         future.result()
                     del futures
                     gc.collect()
 
-    def download_tile_with_progress(self, x, y, zoom, progress_bar):
+    def download_tile_with_progress_local(self, x, y, zoom, progress_bar):
         self.logger.info(f"Zoom Level: {zoom}")
         tile_url = self.base_url.replace('{z}', str(zoom)).replace('{x}', str(x)).replace('{y}', str(y))
         response = requests.get(tile_url)
@@ -84,9 +97,31 @@ class TileClipper:
             directory = os.path.join(self.output_folder, f"{zoom}/{x}/")
             os.makedirs(directory, exist_ok=True)
             filename = tile_url.split('/')[-1] + '.png'
-            with open(os.path.join(directory, filename), 'wb') as file:
+            local_file_path = os.path.join(directory, filename)
+
+            with open(local_file_path, 'wb') as file:
                 file.write(response.content)
-            self.logger.info(f"Tile downloaded successfully to: {directory}{filename}")
+            self.logger.info(f"Tile downloaded and uploaded successfully to S3: {self.s3_bucket}/{zoom}/{x}/{filename}")
+        else:
+            pass
+        progress_bar.update(1)
+
+    def download_tile_with_progress_s3(self, x, y, zoom, progress_bar):
+        self.logger.info(f"Zoom Level: {zoom}")
+        tile_url = self.base_url.replace('{z}', str(zoom)).replace('{x}', str(x)).replace('{y}', str(y))
+        response = requests.get(tile_url)
+        if response.status_code == 200:
+            filename = tile_url.split('/')[-1] + '.png'
+            s3_client = boto3.client(
+                service_name='s3',
+                aws_access_key_id=self.aws_access_key,
+                aws_secret_access_key=self.aws_secret_key
+            )
+            if self.tile_layer_name:
+                s3_client.put_object(Body=response.content, Bucket=self.s3_bucket, Key=f"{self.tile_layer_name}/{zoom}/{x}/{filename}")
+            else:
+                s3_client.put_object(Body=response.content, Bucket=self.s3_bucket, Key=f"{zoom}/{x}/{filename}")
+            self.logger.info(f"Tile downloaded and uploaded successfully to S3: {self.s3_bucket}/{zoom}/{x}/{filename}")
         else:
             pass
         progress_bar.update(1)
