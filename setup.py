@@ -13,7 +13,7 @@ setup(
     package_data={'tileclipper': ['tileclipper/docs/user_guide.md']},
     license='GPLv3',
     url='https://github.com/sijandh35/tileclipper',
-    install_requires=['requests==2.31.0','pyproj==3.6.1','tqdm==4.66.1'],
+    install_requires=['requests==2.31.0','pyproj==3.6.1','tqdm==4.66.1', "boto3==1.24.54"],
     keywords=['map', 'tile', 'clip', 'download', 'tileclipper'],
     classifiers=[
         'Development Status :: 3 - Alpha',
