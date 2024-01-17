@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='tileclipper',
-    version='0.10',
+    version='0.1.1',
     description='The `TileClipper` package enables users to download map tiles within a specified bounding box from a tile server',
     author='Sijan Dhungana',
     author_email='sijandhungana35@gmail.com',
