@@ -3,12 +3,9 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as rh:
-    install_requires = rh.read()
-
 setup(
     name='tileclipper',
-    version='0.8',
+    version='0.10',
     description='The `TileClipper` package enables users to download map tiles within a specified bounding box from a tile server',
     author='Sijan Dhungana',
     author_email='sijandhungana35@gmail.com',
@@ -16,7 +13,7 @@ setup(
     package_data={'tileclipper': ['tileclipper/docs/user_guide.md']},
     license='GPLv3',
     url='https://github.com/sijandh35/tileclipper',
-    install_requires=install_requires,
+    install_requires=['requests==2.31.0','pyproj==3.6.1','tqdm==4.66.1'],
     keywords=['map', 'tile', 'clip', 'download', 'tileclipper'],
     classifiers=[
         'Development Status :: 3 - Alpha',
