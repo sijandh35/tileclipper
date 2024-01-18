@@ -1,12 +1,14 @@
-import requests
 import os
-from math import floor, pi, log, tan, cos
-from concurrent.futures import ThreadPoolExecutor
+import ast
+import boto3
+import argparse
+import requests
 import pyproj
 import gc
 import logging
+from math import floor, pi, log, tan, cos
+from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
-import boto3
 
 class TileClipper:
     def __init__(self, 
@@ -125,3 +127,58 @@ class TileClipper:
         else:
             pass
         progress_bar.update(1)
+
+
+
+def main():
+    """This main function lets this class be run standalone by a bash script."""
+    parser = argparse.ArgumentParser(description="Download the tiles for the area from url")
+    parser.add_argument("--base_url", required=True, help="Tile url for the tiles you want to download")
+    parser.add_argument("--bbox", required=True, help="The bbox for the area you want to download tiles ")
+    parser.add_argument(
+        "-o", "--output_folder", required=False, help="Output folder name"
+    )
+    parser.add_argument("-w", "--max_workers", default=10, help="No of workers you want to run")
+
+    parser.add_argument("--zoom_level", required=True, help="The zoom level for which you want to download tiles. Pass in this format:  10-15")
+
+    parser.add_argument("--use_s3", default=False, help="If you want to download tiles into s3 bucket")
+    parser.add_argument("--aws_key", required=False, help="Your AWS Key to connect with aws")
+    parser.add_argument("--aws_secret", required=False, help="Your aws secret to connect with aws")
+    parser.add_argument("--bucket" ,required=False, help="S3 bucket where you want to download the tiles")
+    parser.add_argument("--layer", required=False, help="The layer name in s3 bucket where you want the tiles")
+
+    args = parser.parse_args()
+
+    if not args.base_url:
+        log.error("You need to specify a base url")
+        parser.print_help()
+        quit()
+
+    if not args.bbox:
+        log.error("You need to provide bbox for the area where you want the tiles")
+        parser.print_help()
+        quit()
+
+    if not (args.output_folder or args.use_s3):
+        log.error("You need to pass the output folder where you want to download tiles if you don't want to use s3")
+        parser.print_help()
+        quit()
+
+    tile_clipper = TileClipper(args.base_url,
+                               ast.literal_eval(args.bbox),
+                               args.output_folder,
+                               int(args.max_workers),
+                               ast.literal_eval(args.use_s3),
+                               args.aws_key,
+                               args.aws_secret,
+                               args.bucket,
+                               args.layer)
+
+    zoom_levels = args.zoom_level.split("-")
+    tile_clipper.download_tiles(int(zoom_levels[0]), int(zoom_levels[1]))
+
+
+if __name__ == "__main__":
+    """This is just a hook so this file can be run standlone. """
+    main()
