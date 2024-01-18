@@ -101,7 +101,7 @@ class TileClipper:
 
             with open(local_file_path, 'wb') as file:
                 file.write(response.content)
-            self.logger.info(f"Tile downloaded and uploaded successfully to S3: {self.s3_bucket}/{zoom}/{x}/{filename}")
+            self.logger.info(f"Tile downloaded successfully to: {self.output_folder}/{zoom}/{x}/{filename}")
         else:
             pass
         progress_bar.update(1)
