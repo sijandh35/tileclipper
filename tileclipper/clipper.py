@@ -9,6 +9,7 @@ import logging
 from math import floor, pi, log, tan, cos
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+from urllib.parse import urlparse
 
 class TileClipper:
     def __init__(self, 
@@ -63,11 +64,12 @@ class TileClipper:
     def download_tile(self, x, y, zoom):
       self.logger.info(f"Zoom Level: {zoom}")
       tile_url = self.base_url.replace('{z}', str(zoom)).replace('{x}', str(x)).replace('{y}', str(y))
+      parsed_url = urlparse(tile_url)
+      filename = os.path.basename(parsed_url.path)
       response = requests.get(tile_url)
       if response.status_code == 200:
           directory = os.path.join(self.output_folder, f"{zoom}/{x}/")
           os.makedirs(directory, exist_ok=True)
-          filename = tile_url.split('/')[-1] + '.png'
           with open(os.path.join(directory, filename), 'wb') as file:
               file.write(response.content)
           self.logger.info(f"Tile downloaded successfully to: {directory}{filename}")
@@ -94,11 +96,12 @@ class TileClipper:
     def download_tile_with_progress_local(self, x, y, zoom, progress_bar):
         self.logger.info(f"Zoom Level: {zoom}")
         tile_url = self.base_url.replace('{z}', str(zoom)).replace('{x}', str(x)).replace('{y}', str(y))
+        parsed_url = urlparse(tile_url)
+        filename = os.path.basename(parsed_url.path)
         response = requests.get(tile_url)
         if response.status_code == 200:
             directory = os.path.join(self.output_folder, f"{zoom}/{x}/")
             os.makedirs(directory, exist_ok=True)
-            filename = tile_url.split('/')[-1] + '.png'
             local_file_path = os.path.join(directory, filename)
 
             with open(local_file_path, 'wb') as file:
@@ -111,9 +114,10 @@ class TileClipper:
     def download_tile_with_progress_s3(self, x, y, zoom, progress_bar):
         self.logger.info(f"Zoom Level: {zoom}")
         tile_url = self.base_url.replace('{z}', str(zoom)).replace('{x}', str(x)).replace('{y}', str(y))
+        parsed_url = urlparse(tile_url)
+        filename = os.path.basename(parsed_url.path)
         response = requests.get(tile_url)
         if response.status_code == 200:
-            filename = tile_url.split('/')[-1] + '.png'
             s3_client = boto3.client(
                 service_name='s3',
                 aws_access_key_id=self.aws_access_key,
