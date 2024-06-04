@@ -2,7 +2,6 @@ import urllib.request
 import os
 import glob
 import shutil
-from osgeo import gdal
 from conversion import bbox_to_xyz, tile_edges
 import argparse
 
@@ -27,12 +26,14 @@ class tms_to_tiff:
         return path
 
     def merge_tiles(self, input_pattern, output_path):
+        from osgeo import gdal
         vrt_path = self.temp_dir + "/tiles.vrt"
         gdal.BuildVRT(vrt_path, glob.glob(input_pattern))
         gdal.Translate(output_path, vrt_path)
 
 
     def georeference_raster_tile(self, x, y, z, path, tms):
+        from osgeo import gdal
         bounds = tile_edges(x, y, z, tms)
         gdal.Translate(
             os.path.join(self.temp_dir, f"{self.temp_dir}/{x}_{y}_{z}.tif"),

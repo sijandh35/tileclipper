@@ -2,3 +2,4 @@ requests==2.31.0
 pyproj==3.6.1
 tqdm==4.66.1
 boto3==1.24.54
+GDAL==3.8.4
